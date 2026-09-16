@@ -82,6 +82,25 @@ project-root/
     └── templates/        # Code templates and standards
 ```
 
+## Modernized FastAPI Service
+
+A Python/FastAPI port of the system lives alongside the COBOL sources in `app/` (application
+package) and `tests/`. Dependencies are managed with [uv](https://docs.astral.sh/uv/) and pinned in
+`uv.lock`.
+
+```bash
+make install       # uv sync
+make run           # uvicorn on http://localhost:8000
+make check         # ruff + mypy + pytest
+make compose-up    # API + PostgreSQL in containers
+```
+
+Configuration is environment-driven via `IPMS_*` variables (see `.env.example`). `/health` is the
+liveness probe and `/ready` additionally verifies database connectivity; both return name, version
+and environment. Logs are emitted as single-line JSON carrying the ERRLOG context fields
+(`PROGRAM_ID`, `USER_ID`, `PROCESS_DATE`, `PROCESS_TIME`) plus a per-request correlation id, which is
+also returned in the `X-Correlation-Id` response header.
+
 ## System Architecture Overview
 
 The system comprises several key components:

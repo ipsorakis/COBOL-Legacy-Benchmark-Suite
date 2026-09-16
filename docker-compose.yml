@@ -1,0 +1,31 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      IPMS_ENVIRONMENT: local
+      IPMS_LOG_LEVEL: INFO
+      IPMS_DATABASE_URL: postgresql+psycopg://ipms:ipms@db:5432/ipms
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ipms
+      POSTGRES_PASSWORD: ipms
+      POSTGRES_DB: ipms
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ipms -d ipms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:
