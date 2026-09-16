@@ -93,7 +93,12 @@ make install       # uv sync
 make run           # uvicorn on http://localhost:8000
 make check         # ruff + mypy + pytest
 make compose-up    # API + PostgreSQL in containers
+make migrate       # alembic upgrade head
 ```
+
+The relational schema is ported from `src/database/db2/` (and, for the audit log, from
+`src/copybook/common/AUDITLOG.cpy`) as SQLAlchemy models in `app/models/`, with Alembic revisions in
+`alembic/versions/`. Monetary and quantity columns are `Numeric`/`Decimal` throughout — never float.
 
 Configuration is environment-driven via `IPMS_*` variables (see `.env.example`). `/health` is the
 liveness probe and `/ready` additionally verifies database connectivity; both return name, version
