@@ -23,21 +23,34 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         correlation_id = request.headers.get(CORRELATION_ID_HEADER) or str(uuid4())
         started = time.perf_counter()
         with log_context(correlation_id=correlation_id, program_id=_program_id(request)):
-            response = await call_next(request)
+            try:
+                response = await call_next(request)
+            except Exception:
+                logger.exception(
+                    "%s %s failed",
+                    request.method,
+                    request.url.path,
+                    extra=_request_fields(request, started, None),
+                )
+                raise
             logger.info(
                 "%s %s %s",
                 request.method,
                 request.url.path,
                 response.status_code,
-                extra={
-                    "http_method": request.method,
-                    "http_path": request.url.path,
-                    "http_status": response.status_code,
-                    "duration_ms": round((time.perf_counter() - started) * 1000, 2),
-                },
+                extra=_request_fields(request, started, response.status_code),
             )
-        response.headers[CORRELATION_ID_HEADER] = correlation_id
-        return response
+            response.headers[CORRELATION_ID_HEADER] = correlation_id
+            return response
+
+
+def _request_fields(request: Request, started: float, status_code: int | None) -> dict[str, object]:
+    return {
+        "http_method": request.method,
+        "http_path": request.url.path,
+        "http_status": status_code,
+        "duration_ms": round((time.perf_counter() - started) * 1000, 2),
+    }
 
 
 def _program_id(request: Request) -> str:

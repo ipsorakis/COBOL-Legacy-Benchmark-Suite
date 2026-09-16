@@ -35,7 +35,16 @@ def health() -> HealthResponse:
     return HealthResponse(**_build_info(get_settings(), "ok"))
 
 
-@router.get("/ready", response_model=ReadinessResponse)
+@router.get(
+    "/ready",
+    response_model=ReadinessResponse,
+    responses={
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": ReadinessResponse,
+            "description": "The database is unreachable.",
+        }
+    },
+)
 def ready(response: Response) -> ReadinessResponse:
     settings = get_settings()
     try:

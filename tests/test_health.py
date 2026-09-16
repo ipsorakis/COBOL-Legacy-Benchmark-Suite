@@ -53,3 +53,9 @@ def test_ready_returns_503_when_database_unreachable(
 
     assert response.status_code == 503
     assert response.json()["database"] == "down"
+
+
+def test_readiness_failure_is_documented_in_openapi(client: TestClient) -> None:
+    responses = client.get("/openapi.json").json()["paths"]["/ready"]["get"]["responses"]
+
+    assert set(responses) >= {"200", "503"}

@@ -20,3 +20,18 @@ def test_invalid_log_level_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(ValueError):
         Settings()
+
+
+def test_default_auth_secret_is_rejected_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("IPMS_ENVIRONMENT", "production")
+    monkeypatch.delenv("IPMS_AUTH_SECRET_KEY", raising=False)
+
+    with pytest.raises(ValueError, match="IPMS_AUTH_SECRET_KEY"):
+        Settings()
+
+
+def test_explicit_auth_secret_is_accepted_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("IPMS_ENVIRONMENT", "production")
+    monkeypatch.setenv("IPMS_AUTH_SECRET_KEY", "a-real-secret")
+
+    assert Settings().auth_secret_key == "a-real-secret"

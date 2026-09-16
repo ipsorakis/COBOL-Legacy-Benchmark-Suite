@@ -1,8 +1,10 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_AUTH_SECRET_KEY = "change-me"
 
 
 class Settings(BaseSettings):
@@ -25,10 +27,21 @@ class Settings(BaseSettings):
     database_max_overflow: int = Field(default=10, ge=0)
     database_pool_timeout_seconds: int = Field(default=30, ge=1)
 
-    auth_secret_key: str = "change-me"
+    auth_secret_key: str = DEFAULT_AUTH_SECRET_KEY
     auth_token_ttl_minutes: int = Field(default=60, ge=1)
 
     batch_commit_interval: int = Field(default=1000, ge=1)
+
+    @model_validator(mode="after")
+    def _reject_default_secret_outside_development(self) -> "Settings":
+        if self.environment in {"staging", "production"} and (
+            self.auth_secret_key == DEFAULT_AUTH_SECRET_KEY
+        ):
+            raise ValueError(
+                f"IPMS_AUTH_SECRET_KEY must be set to a non-default value "
+                f"in the {self.environment} environment"
+            )
+        return self
 
 
 @lru_cache
