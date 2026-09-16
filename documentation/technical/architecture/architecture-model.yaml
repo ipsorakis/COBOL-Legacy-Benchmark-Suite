@@ -1,0 +1,370 @@
+---
+# Architecture model of the COBOL Legacy Benchmark Suite (CLBS).
+#
+# `model` is the machine-readable export: layers, components, data stores,
+# external actors, batch jobs, online transactions and relationships, derived
+# from src/programs, src/copybook, src/jcl, src/cics and src/database.
+# `document` and `sections` drive the rendered standard-format PDF
+# (see generate_architecture_model.py).
+
+document:
+  id: CLBS-A-001
+  kind: Architecture Model
+  title: Investment Portfolio Management System Architecture Model
+  responsibility: COBOL Legacy Benchmark Suite Maintainers
+  issue_date: 16 September 2026
+  previous_issue: First issue
+  next_planned_update: 16 September 2027
+  contact: COBOL Legacy Benchmark Suite Maintainers, github.com/ipsorakis/COBOL-Legacy-Benchmark-Suite
+  copyright: "\u00a9Saudi Aramco 2026. All rights reserved."
+  classification: "Saudi Aramco: Company General Use"
+  logo: assets/aramco-logo.jpg
+  project_logo: ../../assets/CLBS-logo.png
+
+sections:
+  - number: "1"
+    title: Scope
+    body:
+      - This Architecture Model document describes the as-built structure of the
+        COBOL Legacy Benchmark Suite (CLBS), an Investment Portfolio Management
+        System implemented in Enterprise COBOL for z/OS. It identifies the
+        architectural layers of the system, the programs and copybooks allocated
+        to each layer, the data stores they own, and the interfaces between them.
+      - The model is extracted from the source tree itself - COBOL programs, JCL
+        procedures, CICS resource definitions, VSAM cluster definitions and DB2
+        DDL - and is intended as the reference model for modernization,
+        translation and decomposition work performed against this repository.
+      - commentary: >-
+          The system is a benchmark artifact. It is written to production
+          standards for z/OS, but it is not deployed; the model therefore
+          describes intended runtime structure rather than an operating
+          installation.
+
+  - number: "2"
+    title: Conflicts and Deviations
+    body:
+      - subnumber: "2.1"
+        text: Where this model conflicts with the source code in src/, the source
+          code governs and this document shall be corrected.
+      - subnumber: "2.2"
+        text: Where this model conflicts with documentation/technical/system-architecture.md,
+          the discrepancy shall be recorded in the Revision Summary and resolved
+          in favour of the source code.
+      - subnumber: "2.3"
+        text: Components listed as planned or not yet implemented shall not be
+          treated as available interfaces by translation or modernization tooling.
+      - commentary: >-
+          Two such deviations are known and recorded in this issue: the batch
+          position update program (POSUPDT) is a placeholder file with no
+          PROGRAM-ID, and the transaction validation program TRNVAL00 referenced
+          by the architecture narrative is not present in src/programs.
+
+  - number: "3"
+    title: References
+    body:
+      - label: Project References
+        items:
+          - ["documentation/technical/system-architecture.md", "System Architecture Document, v1.2"]
+          - ["documentation/technical/data-dictionary.md", "Data Dictionary"]
+          - ["documentation/technical/development-backlog.md", "Development Backlog"]
+          - ["documentation/operations/test-data-specs.md", "Test Data Specifications"]
+          - ["src/cics/PORTDFN.csd", "CICS Resource Definitions, group PORTGRP"]
+          - ["src/database/db2/db2-definitions.sql", "DB2 Table and Index Definitions"]
+          - ["src/database/vsam/vsam-definitions.txt", "VSAM Cluster Definitions"]
+      - label: Platform References
+        items:
+          - ["Enterprise COBOL for z/OS", "Language Reference and Programming Guide"]
+          - ["CICS Transaction Server for z/OS", "Application Programming Reference"]
+          - ["Db2 for z/OS", "SQL Reference and Application Programming Guide"]
+          - ["z/OS MVS JCL Reference", "Job Control Language Reference"]
+
+  - number: "4"
+    title: General Requirements
+    body:
+      - The architecture of the system shall satisfy the following.
+      - subnumber: "4.1"
+        text: Programs shall be allocated to exactly one architectural layer -
+          batch, online, portfolio maintenance, common services, utility or test -
+          matching their directory under src/programs.
+      - subnumber: "4.2"
+        text: Record layouts shared between programs shall be held in copybooks
+          under src/copybook and shall not be redeclared in program source.
+      - subnumber: "4.3"
+        text: Online programs shall be pseudo-conversational and shall exchange
+          state through the COMMAREA layouts defined in src/copybook/online.
+      - subnumber: "4.4"
+        text: Batch programs shall record execution state in the batch control
+          file and shall support checkpoint and restart at sync points.
+      - subnumber: "4.5"
+        text: DB2 access from batch shall be routed through the common DB2
+          service programs (DB2CONN, DB2CMT, DB2ERR, DB2STAT); online DB2 access
+          shall be routed through DB2ONLN, CURSMGR and DB2RECV.
+      - subnumber: "4.6"
+        text: Error handling shall be centralized in ERRPROC for batch and
+          non-CICS callers and in ERRHNDL for CICS programs; both shall persist
+          diagnostics to the DB2 ERRLOG table or the error log file.
+      - subnumber: "4.7"
+        text: All online access shall be authorized by SECMGR against the
+          authorization file, with security events written to the audit log.
+      - subnumber: "4.8"
+        text: VSAM shall be used as the primary store for master and position
+          records; DB2 shall be used for long-term history, return codes and
+          error logging.
+      - commentary: >-
+          Requirement 4.5 is the principal decomposition seam for modernization:
+          the DB2 service programs are the only components that own connection,
+          commit and cursor lifecycle.
+
+  - number: "5"
+    title: Architecture Model
+    body:
+      - subnumber: "5.1"
+        text: "Layering. The system is organized into six application layers over
+          two data platforms. The batch layer executes scheduled workloads under
+          JCL; the online layer executes under CICS transaction PINQ; the
+          portfolio layer provides master-file CRUD and transaction posting; the
+          common services layer provides DB2, error and audit services to the
+          other layers; the utility and test layers provide operational and
+          benchmark support. Layer membership, component counts and dependencies
+          are listed in Appendix-1."
+      - subnumber: "5.2"
+        text: "Batch layer. BCHCTL00 and PRCSEQ00 drive process control and
+          sequencing against the batch control and process sequence files;
+          CKPRST provides checkpoint and restart services; RCVPRC00 performs
+          recovery processing; HISTLD00 loads transaction history from VSAM into
+          the DB2 POSHIST table; RPTPOS00, RPTAUD00 and RPTSTA00 produce
+          position, audit and statistics reports; RTNCDE00 and RTNANA00 record
+          and analyse program return codes in the DB2 RTNCODES table."
+      - subnumber: "5.3"
+        text: "Online layer. CICS transaction PINQ starts INQONLN, the inquiry
+          controller, which links to SECMGR for authorization, INQPORT for
+          portfolio and position inquiry, INQHIST for transaction history, and
+          ERRHNDL for error presentation. INQHIST links to CURSMGR for cursor
+          lifecycle and to DB2ONLN and DB2RECV for DB2 access and recovery.
+          Screens are defined by mapset INQSET; the position file POSFILE is
+          defined read-only with browse enabled."
+      - subnumber: "5.4"
+        text: "Portfolio layer. PORTMSTR is the master maintenance module over
+          the portfolio VSAM KSDS, with PORTADD, PORTUPDT, PORTDEL and PORTREAD
+          providing the individual batch-driven operations, PORTVALD providing
+          field validation and PORTTRAN posting transactions against portfolio
+          records. PORTMSTR and PORTTRAN call AUDPROC and ERRPROC so that every
+          mutation is audited."
+      - subnumber: "5.5"
+        text: "Common services layer. DB2CONN establishes and retries DB2
+          connections, DB2CMT owns commit and rollback scope, DB2ERR classifies
+          SQLCODEs and persists them to ERRLOG, DB2STAT captures access
+          statistics, ERRPROC is the central error handler and AUDPROC writes the
+          audit trail. These programs are called, never linked, and carry no
+          CICS dependency."
+      - subnumber: "5.6"
+        text: "Utility and test layers. UTLMNT00 performs file maintenance,
+          archiving and reorganization; UTLMON00 collects performance metrics and
+          raises alerts; UTLVAL00 validates and reconciles position and history
+          data. TSTGEN00 generates benchmark portfolios and transactions and
+          TSTVAL00 executes test cases and compares expected against actual
+          results."
+      - subnumber: "5.7"
+        text: "Data architecture. VSAM key-sequenced data sets hold the portfolio
+          master, position master and transaction history records; sequential
+          data sets carry transaction input, reports, alerts and archives; DB2
+          database POSMVP holds the POSHIST history table, the ERRLOG error table
+          and the RTNCODES return-code table, together with the relational
+          PORTFOLIO_MASTER, INVESTMENT_POSITIONS and TRANSACTION_HISTORY tables.
+          Data stores and their owning components are listed in Appendix-2."
+      - subnumber: "5.8"
+        text: "Interfaces. Three interface mechanisms exist: static COBOL CALL
+          for batch and common services, EXEC CICS LINK with a COMMAREA for
+          online programs, and file or table access for data-mediated coupling
+          between batch steps. The complete relationship export is listed in
+          Appendix-3."
+      - commentary: >-
+          There is no synchronous interface between the online and batch layers.
+          Coupling is exclusively through shared VSAM files and DB2 tables, which
+          is what makes the layers separable in a modernization effort.
+
+  - number: "6"
+    title: Roles and Responsibilities
+    body:
+      - Maintenance of this model is the responsibility of the repository
+        maintainers. The model shall be reissued when a program, copybook, JCL
+        job, CICS resource or data store is added, removed or renamed, and when a
+        layer allocation changes. Appendix-5 records the responsibility matrix.
+
+revision_summary:
+  - ["16 September 2026", "First issue. Model extracted from the source tree at repository head; documents the six application layers, 40 components, 13 data stores, 15 batch jobs and one CICS transaction."]
+
+model:
+  system:
+    name: COBOL Legacy Benchmark Suite (CLBS)
+    alias: Investment Portfolio Management System
+    platform: Enterprise COBOL for z/OS, CICS TS, Db2 for z/OS, VSAM
+  actors:
+    - {name: Portfolio Analyst, type: person, interacts_with: "CICS transaction PINQ via 3270 (mapset INQSET)"}
+    - {name: Operations, type: person, interacts_with: "JCL job submission and batch control file"}
+    - {name: z/OS Scheduler, type: system, interacts_with: "Batch job stream, process sequence file"}
+    - {name: IBM RACF, type: system, interacts_with: "SECMGR authorization checks"}
+  layers:
+    - id: batch
+      name: Batch Processing
+      runtime: JCL job step, non-CICS
+      components: [BCHCTL00, PRCSEQ00, RCVPRC00, CKPRST, HISTLD00, RPTPOS00, RPTAUD00, RPTSTA00, RTNCDE00, RTNANA00, POSUPDT]
+    - id: online
+      name: Online Inquiry
+      runtime: CICS TS, pseudo-conversational
+      components: [INQONLN, INQPORT, INQHIST, CURSMGR, SECMGR, ERRHNDL, DB2ONLN, DB2RECV]
+    - id: portfolio
+      name: Portfolio Maintenance
+      runtime: JCL job step, non-CICS
+      components: [PORTMSTR, PORTADD, PORTUPDT, PORTDEL, PORTREAD, PORTVALD, PORTTRAN, PORTTEST]
+    - id: common
+      name: Common Services
+      runtime: Called subprogram
+      components: [DB2CONN, DB2CMT, DB2ERR, DB2STAT, ERRPROC, AUDPROC]
+    - id: utility
+      name: Utility
+      runtime: JCL job step, non-CICS
+      components: [UTLMNT00, UTLMON00, UTLVAL00]
+    - id: test
+      name: Test and Benchmark
+      runtime: JCL job step, non-CICS
+      components: [TSTGEN00, TSTVAL00]
+
+  components:
+    BCHCTL00: {layer: batch, role: Batch control and process status manager, copybooks: [BCHCON, BCHCTL, ERRHAND], data: [BATCH-CONTROL-FILE]}
+    PRCSEQ00: {layer: batch, role: Process sequencing and dependency evaluation, copybooks: [BCHCON, BCHCTL, ERRHAND, PRCSEQ], data: [BATCH-CONTROL-FILE, PROCESS-SEQ-FILE]}
+    RCVPRC00: {layer: batch, role: Recovery processing for failed batch processes, copybooks: [BCHCON, BCHCTL, ERRHAND, PRCSEQ], data: [BATCH-CONTROL-FILE, PROCESS-SEQ-FILE]}
+    CKPRST: {layer: batch, role: Checkpoint and restart services, copybooks: [CKPRST, RETHND], data: [CHECKPOINT-FILE]}
+    HISTLD00: {layer: batch, role: Loads VSAM transaction history into DB2 POSHIST, copybooks: [BCHCON, BCHCTL, DBPROC, DBTBLS, ERRHAND, HISTREC, SQLCA], data: [BATCH-CONTROL-FILE, TRANSACTION-HISTORY, POSHIST]}
+    RPTPOS00: {layer: batch, role: Daily position and valuation report, copybooks: [ERRHAND, POSREC, RTNCODE, TRNREC], data: [POSITION-MASTER, TRANSACTION-HISTORY, REPORT-FILE]}
+    RPTAUD00: {layer: batch, role: Audit and exception report, copybooks: [AUDITLOG, ERRHAND, RTNCODE], data: [AUDIT-FILE, ERROR-FILE, REPORT-FILE]}
+    RPTSTA00: {layer: batch, role: System statistics report, copybooks: [BCHCTL, DB2STAT, ERRHAND, RTNCODE], data: [BATCH-STATS, DB2-STATS, REPORT-FILE]}
+    RTNCDE00: {layer: batch, role: Records program return codes in DB2, copybooks: [RTNCODE], data: [RTNCODES]}
+    RTNANA00: {layer: batch, role: Return code trend analysis report, copybooks: [], data: [RTNCODES, REPORT-FILE]}
+    POSUPDT: {layer: batch, role: Position update engine, copybooks: [], data: [], status: not_implemented}
+    INQONLN: {layer: online, role: Inquiry controller and screen flow, copybooks: [ERRHND, INQCOM], data: []}
+    INQPORT: {layer: online, role: Portfolio and position inquiry, copybooks: [INQCOM, POSREC], data: [POSFILE]}
+    INQHIST: {layer: online, role: Transaction history inquiry, copybooks: [INQCOM], data: [POSHIST]}
+    CURSMGR: {layer: online, role: DB2 cursor lifecycle management, copybooks: [], data: [POSHIST]}
+    SECMGR: {layer: online, role: Authorization and security event logging, copybooks: [ERRHND], data: [AUTHFILE, AUDITLOG]}
+    ERRHNDL: {layer: online, role: Online error handling and message formatting, copybooks: [ERRHND], data: [ERRLOG]}
+    DB2ONLN: {layer: online, role: Online DB2 access controller, copybooks: [ERRHND], data: []}
+    DB2RECV: {layer: online, role: Online DB2 error recovery, copybooks: [DB2REQ, ERRHND], data: []}
+    PORTMSTR: {layer: portfolio, role: Portfolio master maintenance (VSAM CRUD), copybooks: [], data: [PORTFOLIO-FILE]}
+    PORTADD: {layer: portfolio, role: Add portfolio records from input file, copybooks: [PORTFLIO], data: [PORTFOLIO-FILE, INPUT-FILE]}
+    PORTUPDT: {layer: portfolio, role: Apply portfolio updates, copybooks: [PORTFLIO], data: [PORTFOLIO-FILE, UPDATE-FILE]}
+    PORTDEL: {layer: portfolio, role: Delete portfolio records with audit trail, copybooks: [PORTFLIO], data: [PORTFOLIO-FILE, DELETE-FILE, AUDIT-FILE]}
+    PORTREAD: {layer: portfolio, role: Read and report portfolio records, copybooks: [PORTFLIO], data: [PORTFOLIO-FILE]}
+    PORTVALD: {layer: portfolio, role: Portfolio field validation, copybooks: [PORTVAL], data: []}
+    PORTTRAN: {layer: portfolio, role: Posts transactions against portfolio records, copybooks: [AUDITLOG, ERRHAND, PORTREC, TRNREC], data: [PORTFOLIO-FILE, TRANSACTION-FILE]}
+    PORTTEST: {layer: portfolio, role: Portfolio test data generation, copybooks: [ERRHAND, PORTFLIO], data: [TEST-FILE]}
+    DB2CONN: {layer: common, role: DB2 connection establishment and retry, copybooks: [DBPROC, ERRHAND, SQLCA], data: []}
+    DB2CMT: {layer: common, role: Commit and rollback scope control, copybooks: [DBPROC, ERRHAND, SQLCA], data: []}
+    DB2ERR: {layer: common, role: SQLCODE classification and ERRLOG persistence, copybooks: [DBPROC, DBTBLS, ERRHAND, SQLCA], data: [ERRLOG]}
+    DB2STAT: {layer: common, role: DB2 access statistics collection, copybooks: [DBPROC, ERRHAND, SQLCA], data: []}
+    ERRPROC: {layer: common, role: Central error handler for non-CICS callers, copybooks: [ERRHAND], data: [ERROR-LOG]}
+    AUDPROC: {layer: common, role: Audit trail writer, copybooks: [AUDITLOG], data: [AUDIT-FILE]}
+    UTLMNT00: {layer: utility, role: File maintenance, archiving and reorganization, copybooks: [ERRHAND, RTNCODE], data: [CONTROL-FILE, ARCHIVE-FILE, REPORT-FILE]}
+    UTLMON00: {layer: utility, role: Resource monitoring and alerting, copybooks: [DB2STAT, ERRHAND, RTNCODE], data: [MONITOR-CONFIG, MONITOR-LOG, ALERT-FILE, DB2-STATS]}
+    UTLVAL00: {layer: utility, role: Data integrity validation and reconciliation, copybooks: [ERRHAND, POSREC, RTNCODE, TRNREC], data: [POSITION-MASTER, TRANSACTION-HISTORY, VALIDATION-CONTROL, ERROR-REPORT]}
+    TSTGEN00: {layer: test, role: Benchmark portfolio and transaction generation, copybooks: [ERRHAND, PORTFLIO, RTNCODE, TRNREC], data: [TEST-CONFIG, PORTFOLIO-OUT, TRANSACTION-OUT]}
+    TSTVAL00: {layer: test, role: Test case execution and result comparison, copybooks: [ERRHAND, RTNCODE], data: [TEST-CASES, EXPECTED-RESULTS, ACTUAL-RESULTS, TEST-REPORT]}
+
+  data_stores:
+    PORTFOLIO-FILE: {platform: VSAM KSDS, dataset: PORTFOLIO.MASTER.FILE, key: "12 bytes at offset 0", record: 400 bytes, owner: PORTMSTR}
+    POSITION-MASTER: {platform: VSAM KSDS, dataset: PORTFOLIO.POSITION.VSAM, key: Portfolio and security identifier, record: 200 bytes, owner: POSUPDT}
+    TRANSACTION-HISTORY: {platform: VSAM KSDS, dataset: PORTFOLIO.TRANHIST, key: Portfolio and timestamp, record: variable, owner: HISTLD00}
+    BATCH-CONTROL-FILE: {platform: VSAM KSDS, dataset: PORTFOLIO.BCHCTL, key: Process identifier, record: BCHCTL layout, owner: BCHCTL00}
+    PROCESS-SEQ-FILE: {platform: VSAM KSDS, dataset: PORTFOLIO.PRCSEQ, key: Sequence number, record: PRCSEQ layout, owner: PRCSEQ00}
+    CHECKPOINT-FILE: {platform: VSAM, dataset: PORTFOLIO.CHKPT, key: Process identifier, record: CKPRST layout, owner: CKPRST}
+    AUDIT-FILE: {platform: Sequential, dataset: PORTFOLIO.AUDIT, key: n/a, record: AUDITLOG layout, owner: AUDPROC}
+    ERROR-LOG: {platform: Sequential, dataset: PORTFOLIO.ERRLOG, key: n/a, record: ERRHAND layout, owner: ERRPROC}
+    POSHIST: {platform: DB2 table (POSMVP), dataset: POSHIST, key: "PORTFOLIO_ID, TRANS_DATE", record: relational, owner: HISTLD00}
+    ERRLOG: {platform: DB2 table, dataset: ERRLOG, key: "ERROR_TIMESTAMP, PROGRAM_ID", record: relational, owner: DB2ERR}
+    RTNCODES: {platform: DB2 table, dataset: RTNCODES, key: "PROGRAM_ID, RETURN_CODE", record: relational, owner: RTNCDE00}
+    POSFILE: {platform: CICS FILE over VSAM, dataset: PORTFOLIO.POSITION.VSAM, key: Position key, record: 200 bytes, owner: INQPORT}
+    AUTHFILE: {platform: VSAM, dataset: PORTFOLIO.AUTH, key: User identifier, record: auth layout, owner: SECMGR}
+
+  batch_jobs:
+    - {job: RPTPOS, program: RPTPOS00, jcl: src/jcl/batch/RPTPOS.jcl, purpose: Daily position report}
+    - {job: RPTAUD, program: RPTAUD00, jcl: src/jcl/batch/RPTAUD.jcl, purpose: Audit report}
+    - {job: RPTSTA, program: RPTSTA00, jcl: src/jcl/batch/RPTSTA.jcl, purpose: System statistics report}
+    - {job: RTNANA, program: RTNANA00, jcl: src/jcl/RTNANA.jcl, purpose: Return code analysis}
+    - {job: PORTDEF, program: IDCAMS, jcl: src/jcl/portfolio/PORTDEF.jcl, purpose: Define portfolio VSAM cluster}
+    - {job: PORTADD, program: PORTADD, jcl: src/jcl/portfolio/PORTADD.jcl, purpose: Add portfolios}
+    - {job: PORTUPDT, program: PORTUPDT, jcl: src/jcl/portfolio/PORTUPDT.jcl, purpose: Update portfolios}
+    - {job: PORTDEL, program: PORTDEL, jcl: src/jcl/portfolio/PORTDEL.jcl, purpose: Delete portfolios}
+    - {job: PORTREAD, program: PORTREAD, jcl: src/jcl/portfolio/PORTREAD.jcl, purpose: Read portfolios}
+    - {job: PORTTEST, program: PORTTEST, jcl: src/jcl/portfolio/PORTTEST.jcl, purpose: Generate portfolio test data}
+    - {job: UTLMNT, program: UTLMNT00, jcl: src/jcl/utility/UTLMNT.jcl, purpose: File maintenance}
+    - {job: UTLMON, program: UTLMON00, jcl: src/jcl/utility/UTLMON.jcl, purpose: System monitoring}
+    - {job: UTLVAL, program: UTLVAL00, jcl: src/jcl/utility/UTLVAL.jcl, purpose: Data validation}
+    - {job: TSTGEN, program: TSTGEN00, jcl: src/jcl/test/TSTGEN.jcl, purpose: Test data generation}
+    - {job: TSTVAL, program: TSTVAL00, jcl: src/jcl/test/TSTVAL.jcl, purpose: Test validation}
+
+  online_transactions:
+    - {transaction: PINQ, program: INQONLN, mapset: INQSET, group: PORTGRP, db2entry: PORTDB2, plan: PORTPLAN, purpose: Portfolio inquiry}
+
+  relationships:
+    - {from: z/OS Scheduler, to: BCHCTL00, type: submits, detail: Batch job stream}
+    - {from: BCHCTL00, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: PRCSEQ00, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: RCVPRC00, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: HISTLD00, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: HISTLD00, to: POSHIST, type: sql, detail: INSERT history rows}
+    - {from: HISTLD00, to: TRANSACTION-HISTORY, type: file, detail: Sequential read of VSAM history}
+    - {from: RPTPOS00, to: POSITION-MASTER, type: file, detail: Read positions}
+    - {from: RPTAUD00, to: AUDIT-FILE, type: file, detail: Read audit trail}
+    - {from: RPTSTA00, to: BATCH-CONTROL-FILE, type: file, detail: Read process statistics}
+    - {from: RTNCDE00, to: RTNCODES, type: sql, detail: Insert return codes}
+    - {from: RTNANA00, to: RTNCODES, type: sql, detail: Query return codes}
+    - {from: Portfolio Analyst, to: PINQ, type: uses, detail: 3270 terminal}
+    - {from: PINQ, to: INQONLN, type: starts, detail: CICS transaction definition}
+    - {from: INQONLN, to: SECMGR, type: link, detail: EXEC CICS LINK, authorization}
+    - {from: INQONLN, to: INQPORT, type: link, detail: EXEC CICS LINK, COMMAREA INQCOM}
+    - {from: INQONLN, to: INQHIST, type: link, detail: EXEC CICS LINK, COMMAREA INQCOM}
+    - {from: INQONLN, to: ERRHNDL, type: link, detail: EXEC CICS LINK, error presentation}
+    - {from: INQHIST, to: CURSMGR, type: link, detail: Cursor open, fetch, close}
+    - {from: INQHIST, to: DB2ONLN, type: link, detail: DB2 access}
+    - {from: INQHIST, to: DB2RECV, type: link, detail: Recovery on SQL failure}
+    - {from: DB2RECV, to: DB2ONLN, type: link, detail: Connection reset}
+    - {from: DB2RECV, to: ERRHNDL, type: link, detail: Error reporting}
+    - {from: INQPORT, to: POSFILE, type: file, detail: CICS READ and BROWSE, read-only}
+    - {from: INQHIST, to: POSHIST, type: sql, detail: Cursor over history rows}
+    - {from: SECMGR, to: AUTHFILE, type: file, detail: Authorization lookup}
+    - {from: SECMGR, to: AUDIT-FILE, type: file, detail: Security event logging}
+    - {from: ERRHNDL, to: ERRLOG, type: sql, detail: Insert error rows}
+    - {from: PORTMSTR, to: PORTFOLIO-FILE, type: file, detail: VSAM CRUD}
+    - {from: PORTMSTR, to: AUDPROC, type: call, detail: Audit mutations}
+    - {from: PORTMSTR, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: PORTTRAN, to: AUDPROC, type: call, detail: Audit postings}
+    - {from: PORTTRAN, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: PORTTRAN, to: PORTFOLIO-FILE, type: file, detail: Update balances}
+    - {from: PORTADD, to: PORTFOLIO-FILE, type: file, detail: Insert records}
+    - {from: PORTUPDT, to: PORTFOLIO-FILE, type: file, detail: Update records}
+    - {from: PORTDEL, to: PORTFOLIO-FILE, type: file, detail: Delete records}
+    - {from: PORTREAD, to: PORTFOLIO-FILE, type: file, detail: Read records}
+    - {from: DB2CONN, to: DB2ERR, type: call, detail: Connection failure classification}
+    - {from: DB2CMT, to: DB2ERR, type: call, detail: Commit failure classification}
+    - {from: DB2CMT, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: DB2ERR, to: ERRLOG, type: sql, detail: Insert error rows}
+    - {from: DB2ERR, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: DB2STAT, to: ERRPROC, type: call, detail: Error reporting}
+    - {from: ERRPROC, to: ERROR-LOG, type: file, detail: Write diagnostics}
+    - {from: AUDPROC, to: AUDIT-FILE, type: file, detail: Write audit records}
+    - {from: UTLMON00, to: DB2-STATS, type: file, detail: Read collected statistics}
+    - {from: UTLVAL00, to: POSITION-MASTER, type: file, detail: Integrity checks}
+    - {from: UTLVAL00, to: TRANSACTION-HISTORY, type: file, detail: Reconciliation}
+    - {from: TSTGEN00, to: PORTFOLIO-OUT, type: file, detail: Generated test portfolios}
+    - {from: TSTVAL00, to: TEST-REPORT, type: file, detail: Test results}
+    - {from: IBM RACF, to: SECMGR, type: authorizes, detail: External security manager}
+
+  responsibilities:
+    columns: [Maintainers, Architect, Reviewer, Translation Tooling]
+    rows:
+      - {task: Issue and reissue this model, values: [RS, A, RV, C]}
+      - {task: Layer allocation of a new program, values: [RS, A, RV, "-"]}
+      - {task: Adding or changing a data store, values: [RS, A, RV, C]}
+      - {task: Recording a deviation under Section 2, values: [RS, RV, A, "-"]}
+      - {task: Consuming the model for translation, values: [C, C, "-", RS]}
+    legend: "RS - Responsible; A - Approver; RV - Reviewer; C - Consulted; - Not involved"
