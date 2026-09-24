@@ -1,0 +1,81 @@
+{
+  "description": "Legacy baselines for the COBOL-vs-FastAPI parity harness (KAN-103). Every entry records how the data was obtained: 'mainframe-extract' baselines come from a real legacy run and can be signed off as a benchmark, 'derived-from-source-spec' baselines were written from the copybooks and program source and only prove the port matches the specification as read.",
+  "business_date": "2024-03-20",
+  "baselines": [
+    {
+      "name": "transactions_input",
+      "file": "transactions_input.dat",
+      "layout": "TRANSACTION-EXTRACT",
+      "encoding": "ascii",
+      "sha256": "706daec3f79c19885789861351627a1a165521b1ec5fa264e176ca7ba04aa3fb",
+      "records": 5,
+      "record_length": 176,
+      "source_program": "src/copybook/common/TRNREC.cpy (input to POSUPD00/POSUPDT and HISTLD00)",
+      "capture_method": "derived-from-source-spec",
+      "captured_at": "2026-09-24",
+      "captured_by": "devin (KAN-31)",
+      "inputs": "n/a - this file is the batch input the other baselines are produced from",
+      "notes": "Five pending transactions on 2024-03-20 for PORT0001 and PORT0002. Sequence 000004 uses price 1234.5678 so the amount exercises truncation to the S9(13)V9(2) picture (10 x 1234.5678 = 12345.678 -> 12345.67); sequence 000005 is the only sale."
+    },
+    {
+      "name": "closing_prices",
+      "file": "closing_prices.json",
+      "encoding": "utf-8",
+      "sha256": "937687cd3dbb9871404010b5526da9e113a0353b4ded9a9b037be8223ee34c25",
+      "records": 3,
+      "source_program": "documentation/operations/test-data-specs.md (price ranges)",
+      "capture_method": "derived-from-source-spec",
+      "captured_at": "2026-09-24",
+      "captured_by": "devin (KAN-31)",
+      "inputs": "n/a - valuation input for the batch run",
+      "notes": "Closing prices the market value in positions_after_batch is computed from. Fixed so the baseline is deterministic."
+    },
+    {
+      "name": "positions_after_batch",
+      "file": "positions_after_batch.dat",
+      "layout": "POSITION-EXTRACT",
+      "encoding": "ascii",
+      "sha256": "8705e8a7089ababdbf91931152a3ea018b732642a1c63364210b6aa1edfc2895",
+      "records": 3,
+      "record_length": 162,
+      "source_program": "src/programs/batch/POSUPD00.cbl, src/programs/batch/POSUPDT.cbl",
+      "capture_method": "derived-from-source-spec",
+      "captured_at": "2026-09-24",
+      "captured_by": "devin (KAN-31)",
+      "inputs": "transactions_input + closing_prices, business date 2024-03-20",
+      "notes": "Cost basis of a purchase is the sum of the transaction amounts, each already truncated to two decimals. The sale of 30 of 150 units of SEC0000001 removes cost at average cost (19062.50 x 30 / 150 = 3812.50 exactly, so the rule is unambiguous for this data set) and market value is quantity x closing price truncated to two decimals - neither rule is stated in the batch source, whose arithmetic paragraphs are not present, so both need confirmation before this file counts as a benchmark.",
+      "requires_sign_off": true,
+      "sign_off_ticket": "KAN-24"
+    },
+    {
+      "name": "inqport_responses",
+      "file": "inqport_responses.json",
+      "encoding": "utf-8",
+      "sha256": "966914132226c498b3f7d68c8002c8ec0367094b2be18a74d02a5a41b8c05fd8",
+      "records": 2,
+      "source_program": "src/programs/online/INQPORT.cbl, src/copybook/online/INQCOM.cpy",
+      "capture_method": "derived-from-source-spec",
+      "captured_at": "2026-09-24",
+      "captured_by": "devin (KAN-31)",
+      "inputs": "positions_after_batch loaded into POSFILE; INQCOM-ACCOUNT-NO as given per request",
+      "notes": "INQPORT does a single keyed READ of POSFILE and returns one position, so the response carries the POSREC fields at their copybook precision. The not-found case returns the literal 'Position not found for account' and leaves INQCOM-RESPONSE-CODE untouched - only P999-ERROR-ROUTINE sets it - which is why response_code is 0 there. INQPORT keys POSFILE by account number while POSREC is keyed by portfolio id; the account-to-portfolio mapping the port needs is not in the legacy source.",
+      "requires_sign_off": true,
+      "sign_off_ticket": "KAN-20"
+    },
+    {
+      "name": "inqhist_responses",
+      "file": "inqhist_responses.json",
+      "encoding": "utf-8",
+      "sha256": "7c2c34b2e7bcab6ce4b9f1d009b42ab84949b3dddea9ad0a3dbb159d2a6f276c",
+      "records": 1,
+      "source_program": "src/programs/online/INQHIST.cbl",
+      "capture_method": "derived-from-source-spec",
+      "captured_at": "2026-09-24",
+      "captured_by": "devin (KAN-31)",
+      "inputs": "transactions_input loaded into POSHIST; account 1000000001, 2024-03-20 to 2024-03-20, page 1",
+      "notes": "WS-HISTORY-TABLE holds ten rows ordered by TRANS_DATE descending, and its units and price are PIC S9(9)V99 - two decimals, against four in TRNREC - so the baseline rounds units and price to two decimals on purpose. The legacy cursor filters on account only, has no date predicate, and WS-MORE-HISTORY is never set, so the date range and paging in the modern endpoint have no legacy counterpart to compare against.",
+      "requires_sign_off": true,
+      "sign_off_ticket": "KAN-21"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "request": {
+      "function": "INQP",
+      "account_no": "1000000001"
+    },
+    "response": {
+      "portfolio_id": "PORT0001",
+      "position_date": "2024-03-20",
+      "investment_id": "SEC0000001",
+      "quantity": "120.0000",
+      "cost_basis": "15250.00",
+      "market_value": "15852.00",
+      "currency_code": "USD",
+      "status": "A",
+      "response_code": 0,
+      "error_message": ""
+    }
+  },
+  {
+    "request": {
+      "function": "INQP",
+      "account_no": "9999999999"
+    },
+    "response": {
+      "response_code": 0,
+      "error_message": "Position not found for account"
+    }
+  }
+]
