@@ -20,6 +20,9 @@ dev = [
     "pytest>=8.3.0",
     "ruff>=0.6.0",
 ]
+orchestration = [
+    "apache-airflow>=3.0,<4",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -35,10 +38,13 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.uv]
+default-groups = ["dev", "orchestration"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["alembic", "app", "tests"]
+files = ["alembic", "app", "orchestration", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -8,10 +8,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.15 /uv /usr/local/bin/uv
 
 WORKDIR /src
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-default-groups --no-install-project
 
 COPY app ./app
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-default-groups
 
 
 FROM python:3.12-slim AS runtime
