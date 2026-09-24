@@ -14,7 +14,24 @@ jobs:
         with:
           version: "0.12.15"
       - run: uv sync --frozen
-      - run: uv run ruff check alembic app tests
-      - run: uv run ruff format --check alembic app tests
+      - run: uv run ruff check alembic app parity tests
+      - run: uv run ruff format --check alembic app parity tests
       - run: uv run mypy
       - run: uv run pytest
+
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.15"
+      - run: uv sync --frozen
+      # Cases whose ported service does not exist yet are reported as blocked,
+      # so this step passes and the diff report says what is still pending.
+      - run: uv run python -m parity --out parity-report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-report
+          path: parity-report/

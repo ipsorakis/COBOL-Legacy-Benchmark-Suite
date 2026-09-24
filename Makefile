@@ -1,6 +1,6 @@
 UV ?= uv
 
-.PHONY: install run lint format typecheck test check migrate revision docker-build compose-up compose-down
+.PHONY: install run lint format typecheck test check parity migrate revision docker-build compose-up compose-down
 
 install:
 	$(UV) sync
@@ -9,12 +9,12 @@ run:
 	$(UV) run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 lint:
-	$(UV) run ruff check alembic app tests
-	$(UV) run ruff format --check alembic app tests
+	$(UV) run ruff check alembic app parity tests
+	$(UV) run ruff format --check alembic app parity tests
 
 format:
-	$(UV) run ruff format alembic app tests
-	$(UV) run ruff check --fix alembic app tests
+	$(UV) run ruff format alembic app parity tests
+	$(UV) run ruff check --fix alembic app parity tests
 
 typecheck:
 	$(UV) run mypy
@@ -23,6 +23,9 @@ test:
 	$(UV) run pytest
 
 check: lint typecheck test
+
+parity:
+	$(UV) run python -m parity --out parity-report
 
 migrate:
 	$(UV) run alembic upgrade head

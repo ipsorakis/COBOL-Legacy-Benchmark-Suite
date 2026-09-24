@@ -1,0 +1,10 @@
+{
+  "as_of": "2024-03-20",
+  "currency_code": "USD",
+  "source": "documentation/operations/test-data-specs.md price ranges, fixed for a deterministic baseline",
+  "prices": {
+    "SEC0000001": "132.1000",
+    "SEC0000002": "44.2500",
+    "SEC0000003": "1240.0000"
+  }
+}

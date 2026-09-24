@@ -1,0 +1,47 @@
+[
+  {
+    "request": {
+      "function": "INQH",
+      "account_no": "1000000001",
+      "start_date": "2024-03-20",
+      "end_date": "2024-03-20",
+      "page": 1
+    },
+    "response": {
+      "rows": [
+        {
+          "transaction_date": "2024-03-20",
+          "transaction_type": "SL",
+          "units": "30.00",
+          "price": "140.00",
+          "amount": "4200.00"
+        },
+        {
+          "transaction_date": "2024-03-20",
+          "transaction_type": "BU",
+          "units": "200.00",
+          "price": "45.75",
+          "amount": "9150.00"
+        },
+        {
+          "transaction_date": "2024-03-20",
+          "transaction_type": "BU",
+          "units": "50.00",
+          "price": "130.25",
+          "amount": "6512.50"
+        },
+        {
+          "transaction_date": "2024-03-20",
+          "transaction_type": "BU",
+          "units": "100.00",
+          "price": "125.50",
+          "amount": "12550.00"
+        }
+      ],
+      "row_count": 4,
+      "more_rows": false,
+      "response_code": 0,
+      "error_message": ""
+    }
+  }
+]
