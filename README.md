@@ -100,6 +100,9 @@ The relational schema is ported from `src/database/db2/` (and, for the audit log
 `src/copybook/common/AUDITLOG.cpy`) as SQLAlchemy models in `app/models/`, with Alembic revisions in
 `alembic/versions/`. Monetary and quantity columns are `Numeric`/`Decimal` throughout — never float.
 
+Batch orchestration is re-expressed as Airflow DAGs in `orchestration/`, replacing the JCL in
+`src/jcl/`; see [orchestration/README.md](orchestration/README.md) for the member-by-member mapping.
+
 Configuration is environment-driven via `IPMS_*` variables (see `.env.example`). `/health` is the
 liveness probe and `/ready` additionally verifies database connectivity; both return name, version
 and environment. Logs are emitted as single-line JSON carrying the ERRLOG context fields

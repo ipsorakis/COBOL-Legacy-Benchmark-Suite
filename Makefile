@@ -9,12 +9,12 @@ run:
 	$(UV) run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 lint:
-	$(UV) run ruff check alembic app tests
-	$(UV) run ruff format --check alembic app tests
+	$(UV) run ruff check alembic app orchestration tests
+	$(UV) run ruff format --check alembic app orchestration tests
 
 format:
-	$(UV) run ruff format alembic app tests
-	$(UV) run ruff check --fix alembic app tests
+	$(UV) run ruff format alembic app orchestration tests
+	$(UV) run ruff check --fix alembic app orchestration tests
 
 typecheck:
 	$(UV) run mypy
