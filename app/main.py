@@ -2,10 +2,11 @@ import logging
 
 from fastapi import FastAPI
 
-from app.api import health
+from app.api import health, inquiry
 from app.core.logging import configure_logging
 from app.core.middleware import CorrelationIdMiddleware
 from app.core.settings import get_settings
+from app.services.portfolio_inquiry import PositionNotFoundError
 
 
 def create_app() -> FastAPI:
@@ -15,6 +16,8 @@ def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version=settings.version)
     app.add_middleware(CorrelationIdMiddleware)
     app.include_router(health.router)
+    app.include_router(inquiry.router)
+    app.add_exception_handler(PositionNotFoundError, inquiry.position_not_found_handler)  # type: ignore[arg-type]
 
     logging.getLogger(__name__).info(
         "Application initialised",

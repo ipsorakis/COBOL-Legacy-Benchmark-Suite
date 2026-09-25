@@ -100,6 +100,11 @@ The relational schema is ported from `src/database/db2/` (and, for the audit log
 `src/copybook/common/AUDITLOG.cpy`) as SQLAlchemy models in `app/models/`, with Alembic revisions in
 `alembic/versions/`. Monetary and quantity columns are `Numeric`/`Decimal` throughout — never float.
 
+`GET /inquiry/portfolio/{portfolio_id}` is the port of the CICS program `INQPORT`: the keyed VSAM
+`READ FILE('POSFILE') RIDFLD(...)` becomes a keyed `SELECT` against `investment_positions`. Without a
+`position_date` query parameter the latest position date on file is returned, and an empty result
+yields HTTP 404 carrying the INQCOM response code (13, `NOTFND`) and message.
+
 Configuration is environment-driven via `IPMS_*` variables (see `.env.example`). `/health` is the
 liveness probe and `/ready` additionally verifies database connectivity; both return name, version
 and environment. Logs are emitted as single-line JSON carrying the ERRLOG context fields
