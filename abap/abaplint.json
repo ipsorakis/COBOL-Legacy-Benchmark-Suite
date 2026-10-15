@@ -1,0 +1,28 @@
+{
+  "global": {
+    "files": "/src/**/*.*",
+    "exclude": [],
+    "noIssues": []
+  },
+  "dependencies": [],
+  "syntax": {
+    "version": "v752",
+    "errorNamespace": "^(Z|Y|LCL_|LTCL_|LTC_|LTD_|LIF_)"
+  },
+  "rules": {
+    "check_syntax": true,
+    "parser_error": true,
+    "unknown_types": true,
+    "check_ddic": true,
+    "check_include": true,
+    "xml_consistency": true,
+    "unused_variables": true,
+    "unused_types": true,
+    "obsolete_statement": true,
+    "keyword_case": true,
+    "line_length": { "length": 120 },
+    "max_one_statement": true,
+    "definitions_top": false,
+    "prefer_inline": false
+  }
+}
