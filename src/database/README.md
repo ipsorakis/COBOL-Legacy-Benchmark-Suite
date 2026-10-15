@@ -30,5 +30,5 @@ Host-variable layouts for these tables are in `../copybook/db2/DBTBLS.cpy`.
 
 These definitions disagree with each other. If you need a single source of truth, decide which one wins first:
 
-- `vsam-definitions.txt` gives `PORTMSTR` a 400-byte record and a 12-byte key. `PORTDEF.jcl` defines `PORTFOLIO.MASTER.FILE` with `RECORDSIZE(200 200)` and `KEYS(18 0)`.
+- `vsam-definitions.txt` gives `PORTMSTR` a 400-byte record and a 12-byte key. `PORTDEF.jcl` defines `PORTFOLIO.MASTER.FILE` with `RECORDSIZE(200 200)` and `KEYS(18 0)`. The `PORTFLIO` copybook record is 148 bytes with an 18-byte key, so the key agrees with `PORTDEF.jcl`.
 - The CICS file `POSFILE` in `../cics/PORTDFN.csd` uses `RECORDSIZE(200)` and dataset `PORTFOLIO.POSITION.VSAM`, which does not appear in `vsam-definitions.txt`.
