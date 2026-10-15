@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_PROG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <PROGDIR>
+    <NAME>ZCLBS_HISTLD00</NAME>
+    <SUBC>1</SUBC>
+    <RLOAD>E</RLOAD>
+    <FIXPT>X</FIXPT>
+    <UCCHECK>X</UCCHECK>
+   </PROGDIR>
+   <TPOOL>
+    <item>
+     <ID>R</ID>
+     <ENTRY>CLBS: Position history load (ex HISTLD00)</ENTRY>
+     <LENGTH>41</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_COMMIT</KEY>
+     <ENTRY>        Commit every N records</ENTRY>
+     <LENGTH>30</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_MAXERR</KEY>
+     <ENTRY>        Stop after N DB errors</ENTRY>
+     <LENGTH>30</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_MAXRC</KEY>
+     <ENTRY>        Max RC before job abort</ENTRY>
+     <LENGTH>31</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_PRCDT</KEY>
+     <ENTRY>        Control rec. process date</ENTRY>
+     <LENGTH>33</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_SEQNO</KEY>
+     <ENTRY>        Control rec. sequence no.</ENTRY>
+     <LENGTH>33</LENGTH>
+    </item>
+   </TPOOL>
+  </asx:values>
+ </asx:abap>
+</abapGit>
